@@ -4,7 +4,7 @@ import java.util.*;
 
 public class HashMap<K, V> implements Map<K, V>
 {
-	private Node<K, V>[] table = new Node[16];
+	private Node<K, V>[] table = (Node<K, V>[]) new Node<?, ?>[16];
 	private int size;
 	private List<Entry<K, V>> cache = new ArrayList<>();
 
@@ -16,20 +16,19 @@ public class HashMap<K, V> implements Map<K, V>
 		hashMap.put("Hello 3", 3);
 		hashMap.put("Hello 4", 4);
 		hashMap.put("Hello 111", 111);
-		hashMap.put("Hello 5", 5);
-		hashMap.put("Hello 6", 5);
-		hashMap.put("Hello 7", 5);
-		hashMap.put("Hello 8", 5);
-		hashMap.put("Hello 9", 5);
-		hashMap.put("Hello 10", 5);
-		hashMap.put("Hello 11", 5);
-		hashMap.put("Hello 12", 5);
-		hashMap.put("Hello 13", 5);
-		hashMap.put("Hello 14", 5);
-		hashMap.put("Hello 15", 5);
-		hashMap.put("Hello 16", 5);
+		hashMap.put("Hello 5", 53);
+		hashMap.put("Hello 6", 56);
+		hashMap.put("Hello 7", 55);
 
 		System.out.println(hashMap);
+
+		hashMap.remove("Hello 6");
+		hashMap.remove("Hello 5");
+		hashMap.remove("Hello 1");
+		hashMap.remove("Hello 55");
+
+		System.out.println(hashMap);
+		System.out.println(hashMap.get("Hello 2"));
 	}
 
 	@Override
@@ -37,9 +36,14 @@ public class HashMap<K, V> implements Map<K, V>
 	{
 		Node<K, V> node = table[getIndex(key)];
 
-		while(node.next != null)
+		if (node == null)
 		{
-			if(node.key.equals(key))
+			return null;
+		}
+
+		while (node != null)
+		{
+			if (node.key.equals(key))
 			{
 				return node.value;
 			}
@@ -95,6 +99,12 @@ public class HashMap<K, V> implements Map<K, V>
 	public V remove(K key)
 	{
 		int index = getIndex(key);
+
+		if (table[index] == null)
+		{
+			return null;
+		}
+
 		Node<K, V> old;
 		V oldValue = null;
 		Node<K, V> temp = table[index];
@@ -216,61 +226,61 @@ public class HashMap<K, V> implements Map<K, V>
 	private void resize()
 	{
 		int newSize = table.length + (table.length / 2);
-		this.table = (Node<K, V>[]) new Node[newSize];
+		Node<K, V>[] newArray = (Node<K, V>[]) new Node<?, ?>[newSize];
+		var table = this.table;
+		this.table = newArray;
 
-		for (Node<K, V> kvNode : table)
+		for (Node<K, V> node : table)
 		{
-			if (kvNode == null)
+			if (node == null)
 			{
 				continue;
 			}
 
-			Node<K, V> temp = kvNode;
-			Node<K, V> next = kvNode.next;
-			int index = getIndex(temp.getKey());
+			var current = node;
+			var next = node.next;
+			var currentIndex = getIndex(current.getKey());
 
-			while (temp != null)
+			while (current != null)
 			{
-				if (next != null)
+				if (next != null && getIndex(next.getKey()) != currentIndex)
 				{
-					int nextKeyIndex = getIndex(next.getKey());
-
-					if (nextKeyIndex != index)
+					if (this.table[getIndex(next.getKey())] == null)
 					{
-						if (table[nextKeyIndex] == null)
-						{
-							table[nextKeyIndex] = next;
-						}
-						else
-						{
-							Node<K, V> temp2 = table[nextKeyIndex];
-
-							while (temp2 != null)
-							{
-								if (temp2.next == null)
-								{
-									temp2.next = next;
-									break;
-								}
-
-								temp2 = temp2.next;
-							}
-						}
-
-						temp.next = null;
+						this.table[getIndex(next.getKey())] = next;
 					}
+					else
+					{
+						var temp2 = this.table[getIndex(next.getKey())];
+						while (temp2 != null)
+						{
+							if (temp2.next == null)
+							{
+								temp2.next = next;
+								break;
+							}
+							temp2 = temp2.next;
+						}
+					}
+					current.next = null;
 				}
 
-				table[getIndex(temp.getKey())] = temp;
-				temp = temp.next;
+				this.table[getIndex(current.getKey())] = current;
+				current = current.next;
 			}
 		}
 	}
 
 	private int getIndex(K key)
 	{
+		if (key == null)
+		{
+			return 0;
+		}
+
 		int i = key.hashCode();
-		return Math.abs(i % table.length);
+		int hash = i ^ (i >>> 16);
+		return hash & (table.length - 1);
 	}
 
 	static class Node<K, V> implements Map.Entry<K, V>{
@@ -308,7 +318,6 @@ public class HashMap<K, V> implements Map<K, V>
 			return "Node{" +
 					"key=" + key +
 					", value=" + value +
-					", next=" + next +
 					'}';
 		}
 	}
